@@ -3,119 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Agri India - Mobile Core</title>
+  <title>AI Agri India - Core Engine</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #eef2ee; padding: 16px; color: #333; }
-    .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 16px; }
-    h1 { font-size: 20px; color: #2e7d32; text-align: center; margin-bottom: 4px; }
-    p.sub { font-size: 12px; color: #666; text-align: center; margin-bottom: 16px; }
-    label { font-size: 13px; font-weight: bold; color: #444; display: block; margin-top: 10px; }
-    select, textarea, input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 15px; margin-top: 6px; font-family: inherit; }
-    textarea { height: 90px; resize: none; }
-    .btn { background: #2e7d32; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 14px; cursor: pointer; }
-    .btn:disabled { background: #9e9e9e; }
-    #responseBox { background: #e8f5e9; padding: 14px; border-radius: 10px; color: #1b5e20; min-height: 60px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; margin-top: 8px; }
-    .error { background: #ffebee; color: #c62828; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f4f1; padding: 16px; color: #333; }
+    .app-container { max-width: 480px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 16px; }
+    .header h1 { color: #1b5e20; font-size: 22px; }
+    .header p { font-size: 13px; color: #666; margin-top: 2px; }
+    .card { background: white; padding: 18px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 16px; text-align: center; }
+    select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 14px; margin-top: 8px; font-family: inherit; }
+    .submit-btn { background: #2e7d32; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    .submit-btn:disabled { background: #9e9e9e; }
+    .response-card { text-align: left; }
+    .response-card h3 { color: #2e7d32; font-size: 16px; margin-bottom: 8px; }
+    #response { background: #e8f5e9; padding: 14px; border-radius: 12px; color: #1b5e20; min-height: 50px; font-size: 14px; line-height: 1.5; white-space: pre-line; }
   </style>
 </head>
 <body>
 
-  <div class="card">
+<div class="app-container">
+  <div class="header">
     <h1>🌾 AI Agri India</h1>
-    <p class="sub">Voice & Text AGNI Orchestrator</p>
+    <p>Voice & Text AGNI Orchestrator</p>
+  </div>
 
-    <label for="langSelect">Language / भाषा</label>
+  <div class="card">
+    <label for="langSelect" style="font-size: 13px; font-weight: bold; color: #444;">Language / भाषा:</label>
     <select id="langSelect">
-      <option value="Hindi">Hindi (हिंदी)</option>
       <option value="English">English</option>
+      <option value="Hindi">Hindi (हिंदी)</option>
       <option value="Assamese">Assamese (অসমীয়া)</option>
       <option value="Bengali">Bengali (বাংলা)</option>
     </select>
 
-    <label for="queryInput">Ask AGNI a Question:</label>
-    <textarea id="queryInput" placeholder="Tap here to type or use your mobile keyboard's microphone button (🎙️)..."></textarea>
-
-    <button class="btn" id="submitBtn" onclick="askAGNI()">Ask AGNI 🌾</button>
+    <div style="margin-top: 15px;">
+      <textarea id="textQuery" rows="3" placeholder="Type your query or use your phone's keyboard microphone..."></textarea>
+      <button class="submit-btn" id="askBtn" onclick="submitTextQuery()">Ask AGNI 🌾</button>
+    </div>
   </div>
 
-  <div class="card">
-    <h3 style="font-size: 15px; color: #2e7d32;">AGNI Guidance:</h3>
-    <div id="responseBox">Type your question above and tap 'Ask AGNI'.</div>
+  <div class="card response-card">
+    <h3>AGNI Guidance:</h3>
+    <div id="response">Waiting for your query...</div>
   </div>
+</div>
 
-  <script>
-    // PASTE YOUR GEMINI API KEY BELOW inside quotes
-    const GEMINI_API_KEY = "AQ.Ab8RN6KKDT2U_OGNhDq-zAqEd7_qdIkvz1QIbFC_3w1UCiRCgA";
+<script>
+  async function submitTextQuery() {
+    const query = document.getElementById('textQuery').value.trim();
+    const language = document.getElementById('langSelect').value;
+    const responseBox = document.getElementById('response');
+    const askBtn = document.getElementById('askBtn');
 
-    async function askAGNI() {
-      const query = document.getElementById('queryInput').value.trim();
-      const lang = document.getElementById('langSelect').value;
-      const responseBox = document.getElementById('responseBox');
-      const submitBtn = document.getElementById('submitBtn');
-
-      if (!query) {
-        alert("Please enter a question first!");
-        return;
-      }
-
-      if (GEMINI_API_KEY.includes("YOUR_GEMINI")) {
-        responseBox.className = "error";
-        responseBox.innerText = "Error: Please replace YOUR_GEMINI_API_KEY_HERE in index.html with your real key from Google AI Studio!";
-        return;
-      }
-
-      // UI Loading state
-      submitBtn.disabled = true;
-      submitBtn.innerText = "AGNI is thinking...";
-      responseBox.className = "";
-      responseBox.innerText = "Connecting to AGNI...";
-
-      const promptText = `You are AGNI, the AI Agricultural Assistant for AI Agri India. Give direct, short, actionable advice in 2-3 sentences in the ${lang} language. Query: ${query}`;
-
-      try {
-        // Updated to general stable model endpoint
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }]
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.error) {
-          responseBox.className = "error";
-          responseBox.innerText = "Gemini API Error: " + data.error.message;
-        } else if (data.candidates && data.candidates[0].content.parts[0].text) {
-          const reply = data.candidates[0].content.parts[0].text;
-          responseBox.innerText = reply;
-          
-          // Speak out the response on mobile speaker
-          speakText(reply, lang);
-        } else {
-          responseBox.innerText = "No response generated. Try rephrasing.";
-        }
-
-      } catch (err) {
-        responseBox.className = "error";
-        responseBox.innerText = "Network Error: " + err.message + "\nCheck your internet connection or API key.";
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "Ask AGNI 🌾";
-      }
+    if (!query) {
+      alert("Please type a question!");
+      return;
     }
 
-    function speakText(text, language) {
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        if (language === 'Hindi') utterance.lang = 'hi-IN';
-        else if (language === 'Bengali') utterance.lang = 'bn-IN';
-        else utterance.lang = 'en-IN';
-        window.speechSynthesis.speak(utterance);
+    askBtn.disabled = true;
+    askBtn.innerText = "AGNI is thinking...";
+    responseBox.innerText = "Connecting to backend engine...";
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, language })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        responseBox.innerText = "Error: " + data.error;
+      } else if (data.reply) {
+        responseBox.innerText = data.reply;
+        speakText(data.reply, language);
+      } else {
+        responseBox.innerText = "No response received. Please try again.";
       }
+
+    } catch (err) {
+      responseBox.innerText = "Network Error: " + err.message;
+    } finally {
+      askBtn.disabled = false;
+      askBtn.innerText = "Ask AGNI 🌾";
     }
-  </script>
+  }
+
+  function speakText(text, lang) {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (lang === 'Hindi') utterance.lang = 'hi-IN';
+      else if (lang === 'Bengali') utterance.lang = 'bn-IN';
+      else utterance.lang = 'en-IN';
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+</script>
+
 </body>
 </html>
