@@ -10,23 +10,29 @@
   
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f4f1; padding: 20px; color: #333; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f4f1; padding: 15px; color: #333; }
     .app-container { max-width: 480px; margin: 0 auto; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .header h1 { color: #1b5e20; font-size: 24px; }
-    .header p { font-size: 13px; color: #666; margin-top: 4px; }
-    .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 16px; text-align: center; }
-    select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 15px; background: #fdfdfd; margin-top: 8px; }
-    .mic-btn { background: #2e7d32; color: white; border: none; width: 90px; height: 90px; border-radius: 50%; font-size: 36px; margin: 20px 0; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.3); }
-    .mic-btn:active { transform: scale(0.95); }
-    .mic-btn.recording { background: #d32f2f; animation: pulse 1s infinite; box-shadow: 0 4px 10px rgba(211,47,47,0.3); }
+    .header { text-align: center; margin-bottom: 15px; }
+    .header h1 { color: #1b5e20; font-size: 22px; }
+    .header p { font-size: 13px; color: #666; margin-top: 2px; }
+    
+    .card { background: white; padding: 18px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 15px; text-align: center; }
+    select, input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 15px; background: #fdfdfd; margin-top: 8px; }
+    
+    .mic-btn { background: #2e7d32; color: white; border: none; width: 85px; height: 85px; border-radius: 50%; font-size: 34px; margin: 15px 0 10px 0; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.3); }
+    .mic-btn.recording { background: #d32f2f; animation: pulse 1s infinite; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+    
+    .submit-btn { background: #2e7d32; color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    
     #status { font-weight: 600; color: #444; font-size: 14px; }
-    #transcript { font-style: italic; color: #666; margin-top: 10px; min-height: 24px; font-size: 14px; }
+    #transcript { font-style: italic; color: #666; margin-top: 8px; min-height: 20px; font-size: 14px; }
+    
     .response-card { text-align: left; }
     .response-card h3 { color: #2e7d32; font-size: 16px; margin-bottom: 8px; }
-    #response { background: #e8f5e9; padding: 15px; border-radius: 12px; color: #1b5e20; min-height: 60px; font-size: 15px; line-height: 1.5; white-space: pre-line; }
-    #debug-box { background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 12px; font-family: monospace; text-align: left; margin-bottom: 15px; display: none; word-break: break-all; }
+    #response { background: #e8f5e9; padding: 14px; border-radius: 12px; color: #1b5e20; min-height: 60px; font-size: 15px; line-height: 1.5; white-space: pre-line; }
+    
+    .debug-box { background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 12px; font-family: monospace; text-align: left; margin-bottom: 12px; word-break: break-all; }
   </style>
 </head>
 <body>
@@ -34,13 +40,13 @@
 <div class="app-container">
   <div class="header">
     <h1>🌾 AI Agri India</h1>
-    <p>Voice Agricultural Assistant (VANI + AGNI Core)</p>
+    <p>Voice & Text Agricultural Assistant (AGNI Core)</p>
   </div>
 
-  <div id="debug-box"></div>
+  <div id="debugLog" class="debug-box">> Status: Initializing mobile client...</div>
 
   <div class="card">
-    <label for="langSelect" style="font-size: 14px; font-weight: bold; color: #444;">Language / भाषा:</label>
+    <label for="langSelect" style="font-size: 13px; font-weight: bold; color: #444;">Language / भाषा:</label>
     <select id="langSelect" onchange="updateLanguage()">
       <option value="en-IN">English (India)</option>
       <option value="hi-IN">Hindi (हिंदी)</option>
@@ -48,10 +54,17 @@
       <option value="bn-IN">Bengali (বাংলা)</option>
     </select>
 
-    <div style="margin-top: 15px;">
-      <button class="mic-btn" id="micBtn">🎙️</button>
-      <div id="status">Tap mic to start</div>
+    <div style="margin-top: 10px;">
+      <button class="mic-btn" id="micBtn" onclick="handleMicClick()">🎙️</button>
+      <div id="status">Tap mic to speak</div>
       <div id="transcript"></div>
+    </div>
+
+    <!-- Direct Text Fallback for Mobile Browsers -->
+    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 12px;">
+      <p style="font-size: 12px; color: #777; margin-bottom: 4px;">Or type your question directly:</p>
+      <input type="text" id="textQuery" placeholder="e.g. Tomato plant leaves turn yellow">
+      <button class="submit-btn" onclick="handleTextSubmit()">Ask AGNI 🌾</button>
     </div>
   </div>
 
@@ -62,44 +75,36 @@
 </div>
 
 <script>
-  function logDebug(msg) {
-    const box = document.getElementById('debug-box');
-    box.style.display = 'block';
-    box.innerText += "\n> " + msg;
+  function log(msg) {
+    const el = document.getElementById('debugLog');
+    el.innerText += "\n> " + msg;
   }
 
-  // Handle global JS errors on mobile screen
-  window.onerror = function(msg, url, lineNo, columnNo, error) {
-    logDebug("JS ERROR: " + msg + " (Line " + lineNo + ")");
-    return false;
-  };
-
   // ==================== CONFIGURATION ====================
-  const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"; 
-  const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE"; 
-  const SUPABASE_PUBLIC_KEY = "YOUR_SUPABASE_PUBLIC_OR_ANON_KEY_HERE"; 
+  const GEMINI_API_KEY = "AQ.Ab8RN6KKDT2U_OGNhDq-zAqEd7_qdIkvz1QIbFC_3w1UCiRCgA"; 
+  const SUPABASE_URL = "https://ashqccfeepzxrnowgoqc.supabase.co/rest/v1/"; 
+  const SUPABASE_PUBLIC_KEY = "sb_publishable_R_vac6W7aoZaXDScqzD0AQ_mQd6yFQo"; 
   // ========================================================
 
   let supabase = null;
-  try {
-    if (SUPABASE_URL.startsWith("http")) {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
-      logDebug("Supabase connected.");
-    }
-  } catch (e) {
-    logDebug("Supabase Init Warning: " + e.message);
-  }
-
   let recognition = null;
   let isListening = false;
   let currentLang = 'en-IN';
 
-  // Attach event listener safely
-  document.addEventListener("DOMContentLoaded", function() {
-    const micBtn = document.getElementById('micBtn');
-    micBtn.addEventListener('click', toggleListening);
+  window.onload = function() {
+    log("Page loaded successfully.");
 
-    // Initialize Speech Recognition
+    // Init Supabase
+    try {
+      if (SUPABASE_URL && !SUPABASE_URL.includes("YOUR_SUPABASE")) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+        log("Database Connected.");
+      } else {
+        log("Notice: Running without Supabase DB keys.");
+      }
+    } catch(e) { log("DB Init Error: " + e.message); }
+
+    // Init Speech Engine
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
@@ -108,47 +113,47 @@
       recognition.lang = currentLang;
 
       recognition.onstart = () => {
-        document.getElementById('status').innerText = "Listening... Speak now";
-        micBtn.classList.add('recording');
-        logDebug("Microphone active...");
+        document.getElementById('status').innerText = "Listening... Speak now!";
+        document.getElementById('micBtn').classList.add('recording');
+        log("Microphone recording active.");
       };
 
       recognition.onresult = async (event) => {
-        const transcriptText = event.results[0][0].transcript;
-        document.getElementById('transcript').innerText = `"${transcriptText}"`;
+        const text = event.results[0][0].transcript;
+        document.getElementById('transcript').innerText = `"${text}"`;
         document.getElementById('status').innerText = "AGNI is thinking...";
-        logDebug("User said: " + transcriptText);
-        await getAGNIResponse(transcriptText);
+        log("User Spoke: " + text);
+        await processQuery(text);
       };
 
       recognition.onerror = (e) => {
-        document.getElementById('status').innerText = "Error: " + e.error;
-        micBtn.classList.remove('recording');
+        log("Speech Error: " + e.error);
+        document.getElementById('status').innerText = "Mic Error (" + e.error + "). Try typing below.";
+        document.getElementById('micBtn').classList.remove('recording');
         isListening = false;
-        logDebug("Speech Error: " + e.error);
       };
 
       recognition.onend = () => {
-        micBtn.classList.remove('recording');
+        document.getElementById('micBtn').classList.remove('recording');
         isListening = false;
       };
-      
-      logDebug("Speech Engine Ready.");
+
+      log("Speech Engine Ready.");
     } else {
-      logDebug("CRITICAL: SpeechRecognition is NOT supported in this browser. Please use Chrome on Android or Safari on iOS.");
-      document.getElementById('status').innerText = "Speech input not supported in this browser.";
+      log("Web Speech API not supported in this browser. Use text box below.");
+      document.getElementById('status').innerText = "Speech input unsupported. Type below.";
     }
-  });
+  };
 
   function updateLanguage() {
     currentLang = document.getElementById('langSelect').value;
     if (recognition) recognition.lang = currentLang;
   }
 
-  function toggleListening() {
-    logDebug("Mic button tapped!");
+  function handleMicClick() {
+    log("Mic Button Tapped.");
     if (!recognition) {
-      alert("Speech recognition is not supported in this mobile browser. Try opening this link in Google Chrome or Safari.");
+      alert("Voice recognition isn't allowed in this browser. Use the text input box below!");
       return;
     }
 
@@ -159,60 +164,74 @@
       try {
         recognition.start();
         isListening = true;
-      } catch (err) {
-        logDebug("Mic Start Failed: " + err.message);
+      } catch(e) {
+        log("Mic Launch Fail: " + e.message);
       }
     }
   }
 
-  async function getAGNIResponse(userQuery) {
-    const systemPrompt = `You are AGNI, the AI Assistant for AI Agri India. Give short, practical agricultural advice in 2-3 sentences in language '${currentLang}'.`;
+  async function handleTextSubmit() {
+    const input = document.getElementById('textQuery');
+    const query = input.value.trim();
+    if (!query) return alert("Please enter a question first!");
     
+    document.getElementById('transcript').innerText = `"${query}"`;
+    document.getElementById('status').innerText = "AGNI is thinking...";
+    log("Text Query Submitted: " + query);
+    await processQuery(query);
+    input.value = "";
+  }
+
+  async function processQuery(userQuery) {
+    if (GEMINI_API_KEY.includes("YOUR_GEMINI")) {
+      document.getElementById('response').innerText = "Please paste your real GEMINI_API_KEY into line 80 of index.html!";
+      log("Error: Placeholder Gemini Key used.");
+      return;
+    }
+
+    const prompt = `You are AGNI, the AI Agricultural Assistant for AI Agri India. Provide short, direct, actionable advice in 2-3 sentences matching language '${currentLang}'. Query: ${userQuery}`;
+
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\nFarmer Query: ${userQuery}` }] }]
-        })
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       });
 
-      const data = await response.json();
+      const data = await res.json();
       if (data.error) {
-        logDebug("Gemini API Error: " + data.error.message);
+        log("Gemini Error: " + data.error.message);
         document.getElementById('response').innerText = "API Error: " + data.error.message;
         return;
       }
 
-      const reply = data.candidates[0].content.parts[0].text;
-      document.getElementById('response').innerText = reply;
-      document.getElementById('status').innerText = "Tap mic to ask another question";
+      const answer = data.candidates[0].content.parts[0].text;
+      document.getElementById('response').innerText = answer;
+      document.getElementById('status').innerText = "Tap mic or type another question";
+      log("AGNI Response Received.");
 
-      speakText(reply);
-      if (supabase) logToSupabase(userQuery, reply);
+      speakOut(answer);
+      if (supabase) saveToDB(userQuery, answer);
 
     } catch (err) {
-      logDebug("Fetch Error: " + err.message);
-      document.getElementById('response').innerText = "Error contacting AGNI AI. Check your API key.";
+      log("Network Error: " + err.message);
+      document.getElementById('response').innerText = "Failed to connect to AGNI. Check your API Key.";
     }
   }
 
-  function speakText(text) {
+  function speakOut(text) {
     if ('speechSynthesis' in window) {
-      const synth = window.speechSynthesis;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = currentLang;
-      synth.speak(utterance);
+      window.speechSynthesis.speak(utterance);
     }
   }
 
-  async function logToSupabase(queryText, aiResponse) {
+  async function saveToDB(q, a) {
     try {
-      await supabase.from('ai_logs').insert([{ query_text: queryText, ai_response: aiResponse }]);
-      logDebug("Logged to Supabase.");
-    } catch (e) {
-      logDebug("Supabase Log Error: " + e.message);
-    }
+      await supabase.from('ai_logs').insert([{ query_text: q, ai_response: a }]);
+      log("Saved to Supabase.");
+    } catch(e) { log("DB Save Error: " + e.message); }
   }
 </script>
 
