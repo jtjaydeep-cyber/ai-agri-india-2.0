@@ -46,18 +46,18 @@
   </div>
 
   <!-- Real-Time Weather Widget -->
-  <div class="card weather-box" id="weatherWidget">
+  <div class="card weather-box">
     <div>
       <div style="font-size: 12px; opacity: 0.85;">📍 Assam Region</div>
-      <div class="weather-temp" id="tempVal">-- °C</div>
+      <div class="weather-temp" id="tempVal">28°C</div>
     </div>
     <div class="weather-meta">
-      <div id="windVal">Wind: -- km/h</div>
-      <div id="rainVal">Rain Risk: Low</div>
+      <div id="windVal">Wind: 6 km/h</div>
+      <div>Rain Risk: Low</div>
     </div>
   </div>
 
-  <!-- AGNI Voice / Text Query Card -->
+  <!-- AGNI Query Card -->
   <div class="card">
     <label for="langSelect" style="font-size: 12px; font-weight: bold; color: #444;">Language / भाषा:</label>
     <select id="langSelect">
@@ -73,7 +73,7 @@
     </div>
   </div>
 
-  <!-- AGNI Guidance Output -->
+  <!-- AGNI Response Box -->
   <div class="card">
     <div class="response-card">
       <h3>AGNI Guidance:</h3>
@@ -87,50 +87,38 @@
       <span class="market-title">🛒 SAMPARK Local Hub</span>
       <span style="font-size: 11px; color: #666;">Real-time</span>
     </div>
-    <div id="marketList">Loading local buyer offers and equipment...</div>
+    <div id="marketList">
+      <div class="listing-card">
+        <span class="badge">Crop Offer</span>
+        <div class="item-title">Paddy / Rice Buying (Local Mandi)</div>
+        <div class="item-meta">📍 Kamrup | 💰 ₹2,200 / Qtl</div>
+        <a class="call-btn" href="tel:9876543210">📞 Call (9876543210)</a>
+      </div>
+      <div class="listing-card">
+        <span class="badge">Equipment Hire</span>
+        <div class="item-title">Tractor with Rotavator for Rent</div>
+        <div class="item-meta">📍 Nalbari | 💰 ₹750 / hr</div>
+        <a class="call-btn" href="tel:9123456789">📞 Call (9123456789)</a>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    loadWeather();
-    loadMarketplace();
+    fetchLiveWeather();
   });
 
-  async function loadWeather() {
+  async function fetchLiveWeather() {
     try {
-      const res = await fetch('/api/chat?action=get_weather', { method: 'GET' });
+      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=26.1445&longitude=91.7362&current_weather=true");
       const data = await res.json();
-      if (data.weather) {
-        document.getElementById('tempVal').innerText = `${data.weather.temperature}°C`;
-        document.getElementById('windVal').innerText = `Wind: ${data.weather.windspeed} km/h`;
+      if (data && data.current_weather) {
+        document.getElementById('tempVal').innerText = `${Math.round(data.current_weather.temperature)}°C`;
+        document.getElementById('windVal').innerText = `Wind: ${Math.round(data.current_weather.windspeed)} km/h`;
       }
     } catch(e) {
-      document.getElementById('tempVal').innerText = "28°C";
-      document.getElementById('windVal').innerText = "Wind: 12 km/h";
-    }
-  }
-
-  async function loadMarketplace() {
-    const listEl = document.getElementById('marketList');
-    try {
-      const res = await fetch('/api/chat?action=get_market', { method: 'GET' });
-      const data = await res.json();
-      
-      if (data.listings && data.listings.length > 0) {
-        listEl.innerHTML = data.listings.map(item => `
-          <div class="listing-card">
-            <span class="badge">${item.item_type || 'Market Listing'}</span>
-            <div class="item-title">${item.title}</div>
-            <div class="item-meta">📍 ${item.district} | 💰 ${item.price_per_unit}</div>
-            <a class="call-btn" href="tel:${item.contact_phone}">📞 Call (${item.contact_phone})</a>
-          </div>
-        `).join('');
-      } else {
-        listEl.innerHTML = "<p style='font-size: 12px; color: #777;'>No listings available right now.</p>";
-      }
-    } catch(e) {
-      listEl.innerHTML = "<p style='font-size: 12px; color: #777;'>Unable to load market listings.</p>";
+      console.log("Weather fallback active");
     }
   }
 
