@@ -4,10 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Agri India - Core Engine</title>
-  
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f4f1; padding: 16px; color: #333; }
@@ -16,11 +12,11 @@
     .header h1 { color: #1b5e20; font-size: 22px; }
     .header p { font-size: 13px; color: #666; margin-top: 4px; }
     .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 16px; text-align: center; }
-    select, input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 15px; margin-top: 8px; font-family: inherit; }
+    select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 15px; margin-top: 8px; font-family: inherit; }
     .mic-btn { background: #2e7d32; color: white; border: none; width: 85px; height: 85px; border-radius: 50%; font-size: 34px; margin: 15px 0 10px 0; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.3); }
     .mic-btn.recording { background: #d32f2f; animation: pulse 1s infinite; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
-    .submit-btn { background: #2e7d32; color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-size: 15px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    .submit-btn { background: #2e7d32; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 10px; cursor: pointer; }
     #status { font-weight: 600; color: #444; font-size: 14px; }
     #transcript { font-style: italic; color: #666; margin-top: 8px; min-height: 20px; font-size: 14px; }
     .response-card { text-align: left; }
@@ -34,35 +30,35 @@
 <div class="app-container">
   <div class="header">
     <h1>🌾 AI Agri India</h1>
-    <p>Voice & Text Agricultural Assistant (AGNI Core)</p>
+    <p>Voice & Text AGNI Assistant (Powered by Groq Cloud)</p>
   </div>
 
-  <div id="debugBox">> Engine Status: Initializing...</div>
+  <div id="debugBox">> System: Ready.</div>
 
   <div class="card">
     <label for="langSelect" style="font-size: 13px; font-weight: bold; color: #444;">Language / भाषा:</label>
     <select id="langSelect" onchange="updateLanguage()">
-      <option value="Hindi">Hindi (हिंदी)</option>
       <option value="English">English</option>
+      <option value="Hindi">Hindi (हिंदी)</option>
       <option value="Assamese">Assamese (অসমীয়া)</option>
       <option value="Bengali">Bengali (বাংলা)</option>
     </select>
 
     <div style="margin-top: 10px;">
       <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎙️</button>
-      <div id="status">Tap mic or use keyboard mic below</div>
+      <div id="status">Tap mic or type question below</div>
       <div id="transcript"></div>
     </div>
 
     <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 12px;">
-      <input type="text" id="textQuery" placeholder="Or type your question here...">
+      <textarea id="textQuery" rows="3" placeholder="What fertilizer for rice crop?"></textarea>
       <button class="submit-btn" onclick="submitTextQuery()">Ask AGNI 🌾</button>
     </div>
   </div>
 
   <div class="card response-card">
-    <h3>AGNI Guidance</h3>
-    <div id="response">Waiting for your query...</div>
+    <h3>AGNI Guidance:</h3>
+    <div id="response">Waiting for your question...</div>
   </div>
 </div>
 
@@ -72,18 +68,15 @@
     el.innerText += "\n> " + msg;
   }
 
-  // ==================== PASTE YOUR API KEY HERE ====================
-  const GEMINI_API_KEY = "AQ.Ab8RN6K4du1b-Ud7Wpq6Yi87TUVYRoaTW8g1XouwIoX6Hl_A3A";
+  // ==================== PASTE YOUR GROQ KEY BELOW ====================
+  const GROQ_API_KEY = "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";
   // =================================================================
 
   let recognition = null;
   let isListening = false;
-  let currentLang = 'hi-IN';
+  let currentLang = 'en-IN';
 
   window.onload = function() {
-    log("System Initialized.");
-    
-    // Web Speech API Setup
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
@@ -92,34 +85,21 @@
       recognition.lang = currentLang;
 
       recognition.onstart = () => {
-        document.getElementById('status').innerText = "Listening... Speak now!";
+        document.getElementById('status').innerText = "Listening...";
         document.getElementById('micBtn').classList.add('recording');
-        log("Mic active.");
       };
 
       recognition.onresult = async (e) => {
         const text = e.results[0][0].transcript;
         document.getElementById('transcript').innerText = `"${text}"`;
         document.getElementById('status').innerText = "AGNI is thinking...";
-        log("Query: " + text);
         await processQuery(text);
-      };
-
-      recognition.onerror = (e) => {
-        log("Speech Error: " + e.error);
-        document.getElementById('status').innerText = "Speech input error. Use text input below.";
-        document.getElementById('micBtn').classList.remove('recording');
-        isListening = false;
       };
 
       recognition.onend = () => {
         document.getElementById('micBtn').classList.remove('recording');
         isListening = false;
       };
-      log("Voice Engine Ready.");
-    } else {
-      log("Notice: Browser Speech API restricted. Keyboard input enabled.");
-      document.getElementById('status').innerText = "Use keyboard input below.";
     }
   };
 
@@ -133,33 +113,43 @@
   }
 
   function toggleMic() {
-    if (!recognition) return alert("Use the text box and keyboard microphone on your phone!");
+    if (!recognition) return alert("Use the text box and mobile keyboard mic!");
     if (isListening) { recognition.stop(); isListening = false; }
     else { try { recognition.start(); isListening = true; } catch(e) { log("Mic error: " + e.message); } }
   }
 
   async function submitTextQuery() {
     const q = document.getElementById('textQuery').value.trim();
-    if (!q) return alert("Please enter a question!");
+    if (!q) return alert("Please type a question!");
     document.getElementById('transcript').innerText = `"${q}"`;
     document.getElementById('status').innerText = "AGNI is thinking...";
     await processQuery(q);
-    document.getElementById('textQuery').value = "";
   }
 
   async function processQuery(userQuery) {
     const lang = document.getElementById('langSelect').value;
-    const promptText = `You are AGNI, the AI Agricultural Assistant for AI Agri India. Give direct, practical advice in 2 short sentences in ${lang}. Query: ${userQuery}`;
-
-    log("Sending request to Gemini API...");
+    log("Sending request to Groq API...");
 
     try {
-      // Direct URL query parameter - specifically handles AQ. Auth Keys
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY.trim()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROQ_API_KEY.trim()}`
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }]
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "system",
+              content: `You are AGNI, an expert agricultural advisor in India. Provide direct, practical farming guidance in 2 to 3 short sentences in ${lang}.`
+            },
+            {
+              role: "user",
+              content: userQuery
+            }
+          ],
+          temperature: 0.5
         })
       });
 
@@ -168,29 +158,27 @@
 
       if (data.error) {
         log("API Error: " + data.error.message);
-        document.getElementById('response').innerText = "API Error: " + data.error.message;
+        document.getElementById('response').innerText = "Error: " + data.error.message;
         return;
       }
 
-      if (data.candidates && data.candidates[0].content.parts[0].text) {
-        const reply = data.candidates[0].content.parts[0].text;
+      if (data.choices && data.choices[0].message.content) {
+        const reply = data.choices[0].message.content;
         document.getElementById('response').innerText = reply;
-        document.getElementById('status').innerText = "Ask another question!";
-        log("AGNI Answer Received.");
-        speakText(reply);
+        document.getElementById('status').innerText = "Query complete!";
+        log("AGNI replied successfully.");
+        
+        // Voice Output
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.lang = currentLang;
+          window.speechSynthesis.speak(utterance);
+        }
       }
 
     } catch (err) {
       log("Network Error: " + err.message);
       document.getElementById('response').innerText = "Network Error: " + err.message;
-    }
-  }
-
-  function speakText(text) {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = currentLang;
-      window.speechSynthesis.speak(utterance);
     }
   }
 </script>
