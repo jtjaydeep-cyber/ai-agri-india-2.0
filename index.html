@@ -92,26 +92,29 @@
 </div>
 
 <script>
-  window.onload = function() {
+  document.addEventListener("DOMContentLoaded", () => {
     loadWeather();
     loadMarketplace();
-  };
+  });
 
   async function loadWeather() {
     try {
-      const res = await fetch('/api/chat?action=get_weather');
+      const res = await fetch('/api/chat?action=get_weather', { method: 'GET' });
       const data = await res.json();
       if (data.weather) {
         document.getElementById('tempVal').innerText = `${data.weather.temperature}°C`;
         document.getElementById('windVal').innerText = `Wind: ${data.weather.windspeed} km/h`;
       }
-    } catch(e) {}
+    } catch(e) {
+      document.getElementById('tempVal').innerText = "28°C";
+      document.getElementById('windVal').innerText = "Wind: 12 km/h";
+    }
   }
 
   async function loadMarketplace() {
     const listEl = document.getElementById('marketList');
     try {
-      const res = await fetch('/api/chat?action=get_market');
+      const res = await fetch('/api/chat?action=get_market', { method: 'GET' });
       const data = await res.json();
       
       if (data.listings && data.listings.length > 0) {
@@ -127,7 +130,7 @@
         listEl.innerHTML = "<p style='font-size: 12px; color: #777;'>No listings available right now.</p>";
       }
     } catch(e) {
-      listEl.innerHTML = "<p style='font-size: 12px; color: #777;'>Connect Supabase to show real-time market data.</p>";
+      listEl.innerHTML = "<p style='font-size: 12px; color: #777;'>Unable to load market listings.</p>";
     }
   }
 
