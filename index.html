@@ -6,18 +6,35 @@
   <title>AI Agri India - Core Engine</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f4f1; padding: 16px; color: #333; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f4f1; padding: 14px; color: #333; }
     .app-container { max-width: 480px; margin: 0 auto; }
-    .header { text-align: center; margin-bottom: 16px; }
+    
+    .header { text-align: center; margin-bottom: 12px; }
     .header h1 { color: #1b5e20; font-size: 22px; }
-    .header p { font-size: 13px; color: #666; margin-top: 2px; }
-    .card { background: white; padding: 18px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 16px; text-align: center; }
+    .header p { font-size: 12px; color: #666; margin-top: 2px; }
+    
+    .card { background: white; padding: 16px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 14px; }
+    
+    /* Weather Widget */
+    .weather-box { background: linear-gradient(135deg, #2e7d32, #1b5e20); color: white; display: flex; justify-content: space-between; align-items: center; }
+    .weather-temp { font-size: 26px; font-weight: bold; }
+    .weather-meta { font-size: 12px; opacity: 0.9; text-align: right; }
+
     select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 14px; margin-top: 8px; font-family: inherit; }
-    .submit-btn { background: #2e7d32; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    .submit-btn { background: #2e7d32; color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-size: 15px; font-weight: bold; margin-top: 10px; cursor: pointer; }
     .submit-btn:disabled { background: #9e9e9e; }
-    .response-card { text-align: left; }
-    .response-card h3 { color: #2e7d32; font-size: 16px; margin-bottom: 8px; }
-    #response { background: #e8f5e9; padding: 14px; border-radius: 12px; color: #1b5e20; min-height: 50px; font-size: 14px; line-height: 1.5; white-space: pre-line; }
+    
+    .response-card h3 { color: #2e7d32; font-size: 15px; margin-bottom: 6px; }
+    #response { background: #e8f5e9; padding: 12px; border-radius: 10px; color: #1b5e20; min-height: 40px; font-size: 14px; line-height: 1.4; white-space: pre-line; }
+
+    /* Marketplace Section */
+    .market-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .market-title { color: #1b5e20; font-size: 16px; font-weight: bold; }
+    .listing-card { background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-top: 8px; }
+    .badge { display: inline-block; background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 6px; margin-bottom: 4px; }
+    .item-title { font-size: 14px; font-weight: bold; color: #222; }
+    .item-meta { font-size: 12px; color: #666; margin-top: 4px; }
+    .call-btn { display: inline-block; margin-top: 8px; background: #2e7d32; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -25,11 +42,24 @@
 <div class="app-container">
   <div class="header">
     <h1>🌾 AI Agri India</h1>
-    <p>Voice & Text AGNI Orchestrator</p>
+    <p>Voice & Text Guidance • SAMPARK Marketplace</p>
   </div>
 
+  <!-- Real-Time Weather Widget -->
+  <div class="card weather-box" id="weatherWidget">
+    <div>
+      <div style="font-size: 12px; opacity: 0.85;">📍 Assam Region</div>
+      <div class="weather-temp" id="tempVal">-- °C</div>
+    </div>
+    <div class="weather-meta">
+      <div id="windVal">Wind: -- km/h</div>
+      <div id="rainVal">Rain Risk: Low</div>
+    </div>
+  </div>
+
+  <!-- AGNI Voice / Text Query Card -->
   <div class="card">
-    <label for="langSelect" style="font-size: 13px; font-weight: bold; color: #444;">Language / भाषा:</label>
+    <label for="langSelect" style="font-size: 12px; font-weight: bold; color: #444;">Language / भाषा:</label>
     <select id="langSelect">
       <option value="English">English</option>
       <option value="Hindi">Hindi (हिंदी)</option>
@@ -37,33 +67,81 @@
       <option value="Bengali">Bengali (বাংলা)</option>
     </select>
 
-    <div style="margin-top: 15px;">
-      <textarea id="textQuery" rows="3" placeholder="Type your query or use your phone's keyboard microphone..."></textarea>
+    <div style="margin-top: 10px;">
+      <textarea id="textQuery" rows="2" placeholder="Ask AGNI about crops, pests, or fertilizers..."></textarea>
       <button class="submit-btn" id="askBtn" onclick="submitTextQuery()">Ask AGNI 🌾</button>
     </div>
   </div>
 
-  <div class="card response-card">
-    <h3>AGNI Guidance:</h3>
-    <div id="response">Waiting for your query...</div>
+  <!-- AGNI Guidance Output -->
+  <div class="card">
+    <div class="response-card">
+      <h3>AGNI Guidance:</h3>
+      <div id="response">Waiting for your query...</div>
+    </div>
+  </div>
+
+  <!-- SAMPARK Marketplace Feed -->
+  <div class="card">
+    <div class="market-header">
+      <span class="market-title">🛒 SAMPARK Local Hub</span>
+      <span style="font-size: 11px; color: #666;">Real-time</span>
+    </div>
+    <div id="marketList">Loading local buyer offers and equipment...</div>
   </div>
 </div>
 
 <script>
+  window.onload = function() {
+    loadWeather();
+    loadMarketplace();
+  };
+
+  async function loadWeather() {
+    try {
+      const res = await fetch('/api/chat?action=get_weather');
+      const data = await res.json();
+      if (data.weather) {
+        document.getElementById('tempVal').innerText = `${data.weather.temperature}°C`;
+        document.getElementById('windVal').innerText = `Wind: ${data.weather.windspeed} km/h`;
+      }
+    } catch(e) {}
+  }
+
+  async function loadMarketplace() {
+    const listEl = document.getElementById('marketList');
+    try {
+      const res = await fetch('/api/chat?action=get_market');
+      const data = await res.json();
+      
+      if (data.listings && data.listings.length > 0) {
+        listEl.innerHTML = data.listings.map(item => `
+          <div class="listing-card">
+            <span class="badge">${item.item_type || 'Market Listing'}</span>
+            <div class="item-title">${item.title}</div>
+            <div class="item-meta">📍 ${item.district} | 💰 ${item.price_per_unit}</div>
+            <a class="call-btn" href="tel:${item.contact_phone}">📞 Call (${item.contact_phone})</a>
+          </div>
+        `).join('');
+      } else {
+        listEl.innerHTML = "<p style='font-size: 12px; color: #777;'>No listings available right now.</p>";
+      }
+    } catch(e) {
+      listEl.innerHTML = "<p style='font-size: 12px; color: #777;'>Connect Supabase to show real-time market data.</p>";
+    }
+  }
+
   async function submitTextQuery() {
     const query = document.getElementById('textQuery').value.trim();
     const language = document.getElementById('langSelect').value;
     const responseBox = document.getElementById('response');
     const askBtn = document.getElementById('askBtn');
 
-    if (!query) {
-      alert("Please type a question!");
-      return;
-    }
+    if (!query) return alert("Please type a question!");
 
     askBtn.disabled = true;
     askBtn.innerText = "AGNI is thinking...";
-    responseBox.innerText = "Connecting to backend engine...";
+    responseBox.innerText = "Consulting AGNI Engine...";
 
     try {
       const response = await fetch('/api/chat', {
@@ -73,16 +151,12 @@
       });
 
       const data = await response.json();
-
       if (data.error) {
         responseBox.innerText = "Error: " + data.error;
       } else if (data.reply) {
         responseBox.innerText = data.reply;
         speakText(data.reply, language);
-      } else {
-        responseBox.innerText = "No response received. Please try again.";
       }
-
     } catch (err) {
       responseBox.innerText = "Network Error: " + err.message;
     } finally {
