@@ -1,186 +1,194 @@
-var recognition = null;
-var isListening = false;
+let isListening = false;
+let recognition = null;
+let selectedImageBase64 = null;
 
-document.addEventListener("DOMContentLoaded", function() {
-  fetchLiveWeather();
-  loadMarketplace();
-});
-
-function openModal() {
-  document.getElementById('postModal').style.display = 'flex';
-}
-
-function closeModal() {
-  document.getElementById('postModal').style.display = 'none';
-}
-
-function fetchLiveWeather() {
-  fetch("https://api.open-meteo.com/v1/forecast?latitude=26.1445&longitude=91.7362&current_weather=true")
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (data && data.current_weather) {
-        document.getElementById('tempVal').innerText = Math.round(data.current_weather.temperature) + "°C";
-        document.getElementById('windVal').innerText = "Wind: " + Math.round(data.current_weather.windspeed) + " km/h";
-      }
-    })
-    .catch(function(e) {});
-}
-
-function toggleVoiceInput() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  
-  if (!SpeechRecognition) {
-    alert("Voice input is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
-    return;
-  }
-
-  var micBtn = document.getElementById('micBtn');
-  var queryInput = document.getElementById('textQuery');
-  var lang = document.getElementById('langSelect').value;
-
-  if (isListening) {
-    if (recognition) recognition.stop();
-    return;
-  }
-
+// Initialize Speech Recognition if supported by the browser
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SpeechRecognition();
   recognition.continuous = false;
   recognition.interimResults = false;
 
-  if (lang === 'Hindi') recognition.lang = 'hi-IN';
-  else if (lang === 'Bengali') recognition.lang = 'bn-IN';
-  else if (lang === 'Assamese') recognition.lang = 'as-IN';
-  else recognition.lang = 'en-IN';
-
-  recognition.onstart = function() {
-    isListening = true;
-    micBtn.innerText = "🔴 Listening...";
-    micBtn.style.background = "#d32f2f";
-  };
-
   recognition.onresult = function(event) {
-    var transcript = event.results[0][0].transcript;
-    queryInput.value = transcript;
+    const transcript = event.results[0][0].transcript;
+    document.getElementById('textQuery').value = transcript;
+    toggleVoiceUI(false);
   };
 
   recognition.onerror = function(event) {
-    alert("Could not recognize voice cleanly. Please try speaking again.");
+    console.error('Speech recognition error:', event.error);
+    toggleVoiceUI(false);
   };
 
   recognition.onend = function() {
-    isListening = false;
-    micBtn.innerText = "🎤 Speak";
-    micBtn.style.background = "#0288d1";
+    toggleVoiceUI(false);
   };
-
-  recognition.start();
 }
 
-function loadMarketplace() {
-  var listEl = document.getElementById('marketList');
-  fetch('/api/chat?action=get_market', { method: 'GET' })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (data.listings && data.listings.length > 0) {
-        var html = '';
-        for (var i = 0; i < data.listings.length; i++) {
-          var item = data.listings[i];
-          html += '<div class="listing-card">' +
-                    '<span class="badge">' + (item.item_type || 'Market Listing') + '</span>' +
-                    '<div class="item-title">' + item.title + '</div>' +
-                    '<div class="item-meta">📍 ' + item.district + ' | 💰 ' + item.price_per_unit + '</div>' +
-                    '<a class="call-btn" href="tel:' + item.contact_phone + '">📞 Call (' + item.contact_phone + ')</a>' +
-                  '</div>';
-        }
-        listEl.innerHTML = html;
-      }
-    })
-    .catch(function(e) {
-      console.log("Using fallback market listings");
+// Handle voice toggle button
+function toggleVoice() {
+  if (!recognition) {
+    alert("Voice speech recognition is not supported in this browser. Please type your query.");
+    return;
+  }
+
+  const langSelect = document.getElementById('languageSelect').value;
+  
+  // Set language code for recognition engine
+  if (langSelect === 'Assamese') recognition.lang = 'as-IN';
+  else if (langSelect === 'Hindi') recognition.lang = 'hi-IN';
+  else if (langSelect === 'Bengali') recognition.lang = 'bn-IN';
+  else recognition.lang = 'en-US';
+
+  if (isListening) {
+    recognition.stop();
+    toggleVoiceUI(false);
+  } else {
+    recognition.start();
+    toggleVoiceUI(true);
+  }
+}
+
+function toggleVoiceUI(listening) {
+  isListening = listening;
+  const speakBtn = document.getElementById('speakBtn');
+  if (listening) {
+    speakBtn.classList.remove('btn-primary');
+    speakBtn.classList.add('btn-danger');
+    speakBtn.innerText = "🛑 Listening...";
+  } else {
+    speakBtn.classList.remove('btn-danger');
+    speakBtn.classList.add('btn-primary');
+    speakBtn.innerText = "🎤 Speak";
+  }
+}
+
+// Convert selected image file to Base64 format
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('imageFileName').innerText = "Selected: " + file.name;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    // Extract base64 payload without data URL header
+    selectedImageBase64 = e.target.result.split(',')[1];
+  };
+  reader.readAsDataURL(file);
+}
+
+// Submit query / image diagnosis to AGNI backend API
+async function submitQuery() {
+  const query = document.getElementById('textQuery').value;
+  const language = document.getElementById('languageSelect').value;
+  const responseBox = document.getElementById('response');
+
+  if (!query && !selectedImageBase64) {
+    alert("Please enter a query, use voice input, or upload a crop leaf photo.");
+    return;
+  }
+
+  responseBox.innerText = selectedImageBase64 
+    ? "Analyzing leaf photo and evaluating crop health..." 
+    : "Consulting AGNI AI Engine...";
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: query || "Identify any crop disease or pest in this photo and recommend treatment steps.",
+        language: language,
+        imageBase64: selectedImageBase64
+      })
     });
+
+    const data = await res.json();
+    if (data.success) {
+      responseBox.innerText = data.reply;
+    } else {
+      responseBox.innerText = "Error: " + (data.error || "Unable to get advice.");
+    }
+  } catch (err) {
+    responseBox.innerText = "Network Error: " + err.message;
+  } finally {
+    // Reset image payload and UI label after sending
+    selectedImageBase64 = null;
+    document.getElementById('imageFileName').innerText = "";
+    document.getElementById('cropImageInput').value = "";
+  }
 }
 
-function submitNewListing() {
-  var item_type = document.getElementById('postType').value;
-  var title = document.getElementById('postTitle').value.trim();
-  var price_per_unit = document.getElementById('postPrice').value.trim();
-  var district = document.getElementById('postDistrict').value.trim();
-  var contact_phone = document.getElementById('postPhone').value.trim();
-  var btn = document.getElementById('submitListingBtn');
+// Fetch marketplace listings from backend
+async function fetchMarketListings() {
+  const marketListContainer = document.getElementById('marketList');
+  try {
+    const res = await fetch('/api/chat?action=get_market');
+    const data = await res.json();
+
+    if (data.success && data.listings && data.listings.length > 0) {
+      marketListContainer.innerHTML = data.listings.map(item => `
+        <div class="listing-card">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">${item.item_type || 'Listing'}</span>
+            <span class="fw-bold text-success">${item.price_per_unit}</span>
+          </div>
+          <div class="fw-bold text-dark mb-1">${item.title}</div>
+          <div class="small text-muted d-flex justify-content-between align-items-center">
+            <span>📍 ${item.district}</span>
+            <a href="tel:${item.contact_phone}" class="btn btn-sm btn-outline-success py-0 px-2">📞 Call (${item.contact_phone})</a>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      marketListContainer.innerHTML = '<div class="text-muted small text-center">No listings available right now.</div>';
+    }
+  } catch (err) {
+    console.error("Marketplace fetch error:", err);
+    marketListContainer.innerHTML = '<div class="text-danger small text-center">Unable to load listings.</div>';
+  }
+}
+
+// Submit new marketplace listing
+async function submitListing() {
+  const item_type = document.getElementById('itemType').value;
+  const title = document.getElementById('listingTitle').value;
+  const price_per_unit = document.getElementById('listingPrice').value;
+  const district = document.getElementById('listingDistrict').value;
+  const contact_phone = document.getElementById('listingPhone').value;
 
   if (!title || !price_per_unit || !district || !contact_phone) {
-    return alert("Please fill in all fields!");
+    alert("Please fill in all fields before publishing.");
+    return;
   }
 
-  btn.disabled = true;
-  btn.innerText = "Publishing...";
+  try {
+    const res = await fetch('/api/chat?action=post_market', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_type, title, price_per_unit, district, contact_phone })
+    });
 
-  fetch('/api/chat?action=post_market', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ item_type: item_type, title: title, price_per_unit: price_per_unit, district: district, contact_phone: contact_phone })
-  })
-  .then(function(res) { return res.json(); })
-  .then(function(data) {
+    const data = await res.json();
     if (data.success) {
-      alert("Listing published successfully!");
-      closeModal();
-      loadMarketplace();
+      // Hide modal
+      const modalEl = document.getElementById('postListingModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      // Reset form & reload marketplace
+      document.getElementById('listingForm').reset();
+      fetchMarketListings();
     } else {
-      alert("Failed to publish listing: " + (data.error || "Unknown error"));
+      alert("Failed to publish listing: " + (data.error || "Server error"));
     }
-  })
-  .catch(function(err) {
-    alert("Network Error: " + err.message);
-  })
-  .finally(function() {
-    btn.disabled = false;
-    btn.innerText = "Publish Listing 🚀";
-  });
-}
-
-function submitTextQuery() {
-  var query = document.getElementById('textQuery').value.trim();
-  var language = document.getElementById('langSelect').value;
-  var responseBox = document.getElementById('response');
-  var askBtn = document.getElementById('askBtn');
-
-  if (!query) return alert("Please type or speak a question!");
-
-  askBtn.disabled = true;
-  askBtn.innerText = "AGNI is thinking...";
-  responseBox.innerText = "Consulting AGNI Engine...";
-
-  fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: query, language: language })
-  })
-  .then(function(res) { return res.json(); })
-  .then(function(data) {
-    if (data.error) {
-      responseBox.innerText = "Error: " + data.error;
-    } else if (data.reply) {
-      responseBox.innerText = data.reply;
-      speakText(data.reply, language);
-    }
-  })
-  .catch(function(err) {
-    responseBox.innerText = "Network Error: " + err.message;
-  })
-  .finally(function() {
-    askBtn.disabled = false;
-    askBtn.innerText = "Ask AGNI 🌾";
-  });
-}
-
-function speakText(text, lang) {
-  if ('speechSynthesis' in window) {
-    var utterance = new SpeechSynthesisUtterance(text);
-    if (lang === 'Hindi') utterance.lang = 'hi-IN';
-    else if (lang === 'Bengali') utterance.lang = 'bn-IN';
-    else if (lang === 'Assamese') utterance.lang = 'as-IN';
-    else utterance.lang = 'en-IN';
-    window.speechSynthesis.speak(utterance);
+  } catch (err) {
+    alert("Error publishing listing: " + err.message);
   }
-    }
+}
+
+// Load marketplace listings on page load
+document.addEventListener('DOMContentLoaded', function() {
+  fetchMarketListings();
+});
