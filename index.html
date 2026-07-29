@@ -47,7 +47,7 @@
       border-left: 5px solid #2e7d32;
       border-radius: 8px;
       padding: 15px;
-      margin-top: 15px;
+      margin-top: 10px;
       white-space: pre-wrap;
     }
     .listing-card {
@@ -57,11 +57,32 @@
       padding: 12px;
       margin-bottom: 12px;
     }
+    .chip-btn {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .chip-btn:hover {
+      background-color: #2e7d32;
+      color: #ffffff;
+    }
+    .weather-alert-box {
+      background-color: #fffbe3;
+      border-left: 4px solid #f59e0b;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
 
-<div class="container max-width-md" style="max-width: 500px;">
+<div class="container" style="max-width: 500px;">
 
   <!-- Header Section -->
   <div class="header-card text-center">
@@ -69,7 +90,7 @@
     <p class="text-muted small m-0 mt-1">Voice, Text & Vision Guidance • SAMPARK Marketplace</p>
   </div>
 
-  <!-- Regional Weather Info -->
+  <!-- Regional Weather Summary -->
   <div class="weather-card">
     <div class="d-flex justify-content-between align-items-center">
       <div>
@@ -82,82 +103,53 @@
       </div>
     </div>
   </div>
-<!-- Real-Time Weather Alert & Mandi Ticker Widget -->
-<section class="card weather-mandi-card">
-  <div class="card-header flex-between">
-    <h3>🌤️ Local Weather & Mandi Ticker</h3>
-    <button id="refreshWeatherBtn" class="btn-secondary btn-sm">🔄 Refresh</button>
-  </div>
-  
-  <div class="weather-alert-banner warning" id="weatherAlertBanner">
-    <span>⛈️ <strong>Weather Warning (Guwahati/Kamrup):</strong> High humidity (~83%) with thunderstorms expected. Protect harvested paddy from rain.</span>
-  </div>
 
-  <div class="mandi-ticker-wrapper">
-    <div class="ticker-label">📈 Live Assam Mandi Rates:</div>
-    <div class="ticker-content" id="mandiTicker">
-      <span>🌾 Paddy (Common): ₹1,775/Qtl (Sontoli)</span>
-      <span>🌼 Mustard: ₹6,200/Qtl (Kamrup)</span>
-      <span>🌶️ Green Chilli: ₹12,000/Qtl (Uparhali)</span>
-      <span>🪴 Jute: ₹8,800/Qtl (Kamrup)</span>
-      <span>🌽 Maize: ₹1,850/Qtl (Sontoli)</span>
-    </div>
-  </div>
-</section>
-
-<!-- Government Schemes & Subsidy Advisor Section -->
-<section class="card schemes-card">
-  <div class="card-header">
-    <h3>📜 Govt Scheme & Subsidy Advisor</h3>
-    <p class="subtitle">Instant guidance on PM-KISAN, CMSGUY Tractor Subsidy, KCC & PMFBY Crop Insurance</p>
-  </div>
-
-  <div class="scheme-chips">
-    <button class="chip-btn" onclick="askScheme('PM-KISAN status and eligibility in Assam')">🌾 PM-KISAN (₹6,000/yr)</button>
-    <button class="chip-btn" onclick="askScheme('CMSGUY Assam Tractor Subsidy 70 percent apply process')">🚜 CMSGUY Tractor Scheme</button>
-    <button class="chip-btn" onclick="askScheme('Kisan Credit Card KCC loan interest subvention Assam')">💳 KCC Loan (4% Interest)</button>
-    <button class="chip-btn" onclick="askScheme('PMFBY Crop Insurance Assam flood compensation')">🛡️ PMFBY Crop Insurance</button>
-  </div>
-
-  <div class="scheme-search-box">
-    <input type="text" id="schemeInput" placeholder="Ask about any Govt subsidy, eligibility, or documents required..." />
-    <button id="checkSchemeBtn" class="btn-primary">Search Scheme</button>
-  </div>
-
-  <div id="schemeResultBox" class="scheme-result-box hidden">
-    <h4>📋 Scheme Breakdown & Step-by-Step Application:</h4>
-    <div id="schemeDetailsContent"></div>
-  </div>
-</section>
-  <!-- Live Mandi Rates -->
-  <div class="mandi-card">
+  <!-- Local Weather Alert & Mandi Ticker Section -->
+  <div class="main-card">
     <div class="d-flex justify-content-between align-items-center mb-2">
-      <span class="fw-bold text-success small">📈 Live Mandi Rates (Kamrup / Fancy Bazaar)</span>
-      <span class="text-muted small" style="font-size: 0.75rem;">Updated Today</span>
+      <h6 class="fw-bold text-success m-0">🌤️ Weather Alert & Mandi Ticker</h6>
+      <button class="btn btn-sm btn-outline-success" onclick="location.reload()">🔄 Refresh</button>
     </div>
-    <div class="row g-2 text-center small">
-      <div class="col-4">
-        <div class="bg-white p-2 rounded border">
-          <div class="fw-bold">Paddy (Dhan)</div>
-          <div class="text-success">₹2,500 / Qtl</div>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="bg-white p-2 rounded border">
-          <div class="fw-bold">Rice (Common)</div>
-          <div class="text-success">₹3,500 / Qtl</div>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="bg-white p-2 rounded border">
-          <div class="fw-bold">Mustard</div>
-          <div class="text-success">₹6,550 / Qtl</div>
-        </div>
+
+    <div class="weather-alert-box mb-3">
+      <strong>⛈️ Weather Warning (Guwahati/Kamrup):</strong> High humidity (~83%) with rain/thunderstorms expected. Protect harvested paddy crops from waterlogging.
+    </div>
+
+    <div class="p-2 bg-light rounded border">
+      <div class="fw-bold text-success small mb-1">📈 Live Assam Mandi Ticker:</div>
+      <div class="small text-secondary">
+        🌾 Paddy: ₹1,775/Qtl (Sontoli) | 🌼 Mustard: ₹6,200/Qtl | 🌶️ Chilli: ₹12,000/Qtl | 🪴 Jute: ₹8,800/Qtl
       </div>
     </div>
   </div>
 
-  <!-- Query & Disease Diagnosis Form -->
+  <!-- Govt Scheme & Subsidy Advisor Section -->
+  <div class="main-card">
+    <h6 class="fw-bold text-success mb-1">📜 Govt Scheme & Subsidy Advisor</h6>
+    <p class="text-muted small mb-3">Instant guidance on PM-KISAN, CMSGUY Tractor Subsidy, KCC & PMFBY Crop Insurance</p>
+
+    <!-- Scheme Shortcut Chips -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <button class="chip-btn" onclick="askScheme('PM-KISAN status and eligibility in Assam')">🌾 PM-KISAN (₹6,000/yr)</button>
+      <button class="chip-btn" onclick="askScheme('CMSGUY Assam Tractor Subsidy 70 percent apply process')">🚜 CMSGUY Tractor Scheme</button>
+      <button class="chip-btn" onclick="askScheme('Kisan Credit Card KCC loan interest subvention Assam')">💳 KCC Loan (4% Interest)</button>
+      <button class="chip-btn" onclick="askScheme('PMFBY Crop Insurance Assam flood compensation')">🛡️ PMFBY Crop Insurance</button>
+    </div>
+
+    <!-- Scheme Search Bar -->
+    <div class="input-group mb-3">
+      <input type="text" id="schemeInput" class="form-control form-control-sm" placeholder="Ask about any Govt subsidy, required documents...">
+      <button class="btn btn-sm btn-success" type="button" id="checkSchemeBtn" onclick="submitSchemeSearch()">Search</button>
+    </div>
+
+    <!-- Scheme Response Box -->
+    <div id="schemeResultBox" class="d-none">
+      <h6 class="fw-bold text-success mb-1">📋 Scheme Breakdown:</h6>
+      <div id="schemeDetailsContent" class="response-card text-secondary small"></div>
+    </div>
+  </div>
+
+  <!-- Query & Disease Diagnosis Section -->
   <div class="main-card">
     <div class="mb-3">
       <label for="languageSelect" class="form-label fw-bold small">Language / ভাষা:</label>
@@ -189,7 +181,7 @@
       <button id="askBtn" class="btn btn-success w-50" onclick="submitQuery()">Ask AGNI 🌾</button>
     </div>
 
-    <!-- AGNI Response Output -->
+    <!-- AGNI Guidance Response -->
     <div class="mt-3">
       <h6 class="fw-bold text-success mb-1">AGNI Guidance:</h6>
       <div id="response" class="response-card text-secondary small">
