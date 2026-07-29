@@ -192,3 +192,37 @@ async function submitListing() {
 document.addEventListener('DOMContentLoaded', function() {
   fetchMarketListings();
 });
+// Trigger direct scheme search from quick selection chips
+function askScheme(schemeName) {
+  document.getElementById('schemeInput').value = schemeName;
+  submitSchemeSearch();
+}
+
+async function submitSchemeSearch() {
+  const queryText = document.getElementById('schemeInput').value;
+  const language = document.getElementById('languageSelect').value;
+  const resultBox = document.getElementById('schemeResultBox');
+  const detailsContent = document.getElementById('schemeDetailsContent');
+
+  if (!queryText.trim()) return;
+
+  resultBox.classList.remove('d-none');
+  detailsContent.innerText = "Consulting government portals and subsidy guidelines...";
+
+  try {
+    const res = await fetch('/api/chat?action=scheme_advisor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schemeQuery: queryText, language: language })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      detailsContent.innerText = data.reply;
+    } else {
+      detailsContent.innerText = "Could not load scheme details.";
+    }
+  } catch (err) {
+    detailsContent.innerText = "Network Error: " + err.message;
+  }
+}
