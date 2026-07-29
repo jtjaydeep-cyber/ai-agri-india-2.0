@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, listing: newListing });
     }
 
-    // 3. POST AGNI Chat Guidance Query
+    // 3. POST AGNI Chat Guidance Query (Using Groq API)
     if (req.method === 'POST') {
       const { query, language } = req.body || {};
 
@@ -56,46 +56,56 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: "Please enter a valid question." });
       }
 
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GROQ_API_KEY;
 
-      // Fallback response if GEMINI_API_KEY environment variable is not set in Vercel
+      // Fallback response if GROQ_API_KEY environment variable is not set in Vercel
       if (!apiKey) {
         return res.status(200).json({
           success: true,
           reply: `[Demo Guidance for "${query}"]:\n` +
                  `• Basal dose: Apply DAP (50 kg/acre) and MOP (25 kg/acre) during land preparation.\n` +
                  `• Top dressing: Apply Urea (45-50 kg/acre) in 2-3 split doses at tillering and panicle initiation stage.\n` +
-                 `• Note: Add GEMINI_API_KEY in your Vercel project environment settings for live AI responses.`
+                 `• Note: Add GROQ_API_KEY in your Vercel project environment settings for live AI responses.`
         });
       }
 
-      // Direct REST API Call to Gemini Engine
-      const promptText = `You are AGNI, an AI agricultural expert for Indian farmers in Assam and North-East India. 
-Provide clear, actionable farming guidance (under 120 words) for:
-Language requested: ${language || 'English'}
-Query: ${query}`;
+      // Standard Fetch Call to Groq API (OpenAI-compatible Chat Completions)
+      const groqUrl = "https://api.groq.com/openai/v1/chat/completions";
 
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-      const apiResponse = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const apiResponse = await fetch(groqUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }]
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "system",
+              content: "You are AGNI, an AI agricultural expert for Indian farmers in Assam and North-East India. Provide clear, actionable farming guidance under 120 words."
+            },
+            {
+              role: "user",
+              content: `Language requested: ${language || 'English'}\nFarmer Query: ${query}`
+            }
+          ],
+          temperature: 0.5,
+          max_tokens: 300
         })
       });
 
       const data = await apiResponse.json();
 
       if (!apiResponse.ok) {
-        console.error("Gemini API error:", data);
+        console.error("Groq API error:", data);
         return res.status(200).json({
           success: true,
-          reply: `Unable to reach Gemini AI API (${data.error?.message || 'API Error'}). Please verify your GEMINI_API_KEY in Vercel.`
+          reply: `Groq API Error (${data.error?.message || 'API error'}). Check your GROQ_API_KEY in Vercel.`
         });
       }
 
-      const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No specific advice generated. Please try again.";
+      const replyText = data?.choices?.[0]?.message?.content || "No specific advice generated. Please try again.";
 
       return res.status(200).json({ success: true, reply: replyText });
     }
