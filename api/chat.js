@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     // 1. GET Marketplace Listings (Fetch from Supabase)
     if (req.method === 'GET' && action === 'get_market') {
       if (!supabaseUrl || !supabaseKey) {
-        // Fallback to static data if Supabase keys aren't added yet
+        // Fallback to static data if Supabase environment variables are missing
         return res.status(200).json({
           success: true,
           listings: [
@@ -66,32 +66,45 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, listing: savedData[0] || newListing });
     }
 
-    // 3. POST AGNI Chat Guidance Query (Groq Multilingual Engine)
+    // 3. POST AGNI Chat Guidance & Leaf Vision Query
     if (req.method === 'POST') {
-      const { query, language } = req.body || {};
-
-      if (!query) {
-        return res.status(400).json({ success: false, error: "Please enter a valid question." });
-      }
+      const { query, language, imageBase64 } = req.body || {};
 
       const apiKey = process.env.GROQ_API_KEY;
 
       if (!apiKey) {
         return res.status(200).json({
           success: true,
-          reply: `[Demo Mode - ${language || 'English'}]: Set GROQ_API_KEY in Vercel settings for live AI replies.`
+          reply: `[Demo Mode - ${language || 'English'}]: Please set GROQ_API_KEY in Vercel settings for live AI responses and disease diagnosis.`
         });
       }
 
-      const systemPrompt = `You are AGNI, an expert AI agricultural advisor for farmers in Assam and North-East India.
-Provide concise guidance (under 130 words).
+      const systemPrompt = `You are AGNI, an expert AI agricultural plant pathologist and advisory engine for farmers in Assam and North-East India.
+Provide clear, actionable guidance or pest/disease diagnosis with organic and chemical remedies (under 140 words).
 
-CRITICAL LANGUAGE RULE:
-- You MUST respond ENTIRELY in the target language and script requested.
-- Assamese / অসমীয়া -> ASSAMESE script (অসমীয়া লিপি).
-- Hindi / हिंदी -> DEVANAGARI script (हिंदी देवनागरी).
-- Bengali / বাংলা -> BENGALI script (বাংলা লিপি).
-- English -> English script.`;
+CRITICAL LANGUAGE & SCRIPT RULE:
+- You MUST respond ENTIRELY in the target language requested (${language || 'English'}).
+- If requested language is "Assamese" or "অসমীয়া", respond strictly in ASSAMESE script (অসমীয়া লিপি).
+- If requested language is "Hindi" or "हिंदी", respond strictly in DEVANAGARI script (हिंदी देवनागरी).
+- If requested language is "Bengali" or "বাংলা", respond strictly in BENGALI script (বাংলা লিপি).
+- If requested language is "English", respond in English.`;
+
+      // Use vision model if image is attached, otherwise default to fast text model
+      const modelName = imageBase64 ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+
+      let userContent = [];
+
+      if (imageBase64) {
+        userContent.push({
+          type: "image_url",
+          image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
+        });
+      }
+
+      userContent.push({
+        type: "text",
+        text: `Target Language Selected: ${language || 'English'}\nFarmer Query: ${query}`
+      });
 
       const groqUrl = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -102,18 +115,27 @@ CRITICAL LANGUAGE RULE:
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: modelName,
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: `Target Language Selected: ${language || 'English'}\nFarmer Query: ${query}` }
+            { role: "user", content: userContent }
           ],
-          temperature: 0.3,
-          max_tokens: 400
+          temperature: 0.2,
+          max_tokens: 450
         })
       });
 
       const data = await apiResponse.json();
-      const replyText = data?.choices?.[0]?.message?.content || "No advice generated. Please try again.";
+
+      if (!apiResponse.ok) {
+        console.error("Groq API error:", data);
+        return res.status(200).json({
+          success: true,
+          reply: `Groq API Error (${data.error?.message || 'API Error'}).`
+        });
+      }
+
+      const replyText = data?.choices?.[0]?.message?.content || "Could not analyze the photo. Please try uploading a clearer image.";
 
       return res.status(200).json({ success: true, reply: replyText });
     }
