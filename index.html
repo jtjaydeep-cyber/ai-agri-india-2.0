@@ -82,7 +82,53 @@
       </div>
     </div>
   </div>
+<!-- Real-Time Weather Alert & Mandi Ticker Widget -->
+<section class="card weather-mandi-card">
+  <div class="card-header flex-between">
+    <h3>🌤️ Local Weather & Mandi Ticker</h3>
+    <button id="refreshWeatherBtn" class="btn-secondary btn-sm">🔄 Refresh</button>
+  </div>
+  
+  <div class="weather-alert-banner warning" id="weatherAlertBanner">
+    <span>⛈️ <strong>Weather Warning (Guwahati/Kamrup):</strong> High humidity (~83%) with thunderstorms expected. Protect harvested paddy from rain.</span>
+  </div>
 
+  <div class="mandi-ticker-wrapper">
+    <div class="ticker-label">📈 Live Assam Mandi Rates:</div>
+    <div class="ticker-content" id="mandiTicker">
+      <span>🌾 Paddy (Common): ₹1,775/Qtl (Sontoli)</span>
+      <span>🌼 Mustard: ₹6,200/Qtl (Kamrup)</span>
+      <span>🌶️ Green Chilli: ₹12,000/Qtl (Uparhali)</span>
+      <span>🪴 Jute: ₹8,800/Qtl (Kamrup)</span>
+      <span>🌽 Maize: ₹1,850/Qtl (Sontoli)</span>
+    </div>
+  </div>
+</section>
+
+<!-- Government Schemes & Subsidy Advisor Section -->
+<section class="card schemes-card">
+  <div class="card-header">
+    <h3>📜 Govt Scheme & Subsidy Advisor</h3>
+    <p class="subtitle">Instant guidance on PM-KISAN, CMSGUY Tractor Subsidy, KCC & PMFBY Crop Insurance</p>
+  </div>
+
+  <div class="scheme-chips">
+    <button class="chip-btn" onclick="askScheme('PM-KISAN status and eligibility in Assam')">🌾 PM-KISAN (₹6,000/yr)</button>
+    <button class="chip-btn" onclick="askScheme('CMSGUY Assam Tractor Subsidy 70 percent apply process')">🚜 CMSGUY Tractor Scheme</button>
+    <button class="chip-btn" onclick="askScheme('Kisan Credit Card KCC loan interest subvention Assam')">💳 KCC Loan (4% Interest)</button>
+    <button class="chip-btn" onclick="askScheme('PMFBY Crop Insurance Assam flood compensation')">🛡️ PMFBY Crop Insurance</button>
+  </div>
+
+  <div class="scheme-search-box">
+    <input type="text" id="schemeInput" placeholder="Ask about any Govt subsidy, eligibility, or documents required..." />
+    <button id="checkSchemeBtn" class="btn-primary">Search Scheme</button>
+  </div>
+
+  <div id="schemeResultBox" class="scheme-result-box hidden">
+    <h4>📋 Scheme Breakdown & Step-by-Step Application:</h4>
+    <div id="schemeDetailsContent"></div>
+  </div>
+</section>
   <!-- Live Mandi Rates -->
   <div class="mandi-card">
     <div class="d-flex justify-content-between align-items-center mb-2">
