@@ -20,10 +20,19 @@
     .weather-temp { font-size: 26px; font-weight: bold; }
     .weather-meta { font-size: 12px; opacity: 0.9; text-align: right; }
 
+    /* Mandi Ticker */
+    .mandi-card { padding: 12px 16px; background: #e8f5e9; border: 1px solid #c8e6c9; }
+    .mandi-title { font-size: 12px; font-weight: bold; color: #1b5e20; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .mandi-ticker { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .mandi-item { background: white; padding: 6px 10px; border-radius: 8px; font-size: 11px; white-space: nowrap; border: 1px solid #a5d6a7; }
+    .mandi-item strong { color: #2e7d32; display: block; font-size: 12px; }
+
     select, input, textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; margin-top: 6px; font-family: inherit; }
-    .submit-btn { background: #2e7d32; color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-size: 15px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    .submit-btn { background: #2e7d32; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
     .submit-btn:disabled { background: #9e9e9e; }
     
+    .mic-btn { background: #0288d1; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
+
     .response-card h3 { color: #2e7d32; font-size: 15px; margin-bottom: 6px; }
     #response { background: #e8f5e9; padding: 12px; border-radius: 10px; color: #1b5e20; min-height: 40px; font-size: 14px; line-height: 1.4; white-space: pre-line; }
 
@@ -64,7 +73,22 @@
     </div>
   </div>
 
-  <!-- AGNI Query Card -->
+  <!-- Live Mandi Prices Bar -->
+  <div class="card mandi-card">
+    <div class="mandi-title">
+      <span>📈 Live Mandi Rates (Kamrup / Fancy Bazaar)</span>
+      <span style="font-size: 10px; color: #666;">Updated Today</span>
+    </div>
+    <div class="mandi-ticker">
+      <div class="mandi-item"><strong>Paddy (Dhan)</strong> ₹2,500 / Qtl</div>
+      <div class="mandi-item"><strong>Rice (Common)</strong> ₹3,500 / Qtl</div>
+      <div class="mandi-item"><strong>Mustard</strong> ₹6,550 / Qtl</div>
+      <div class="mandi-item"><strong>Potato</strong> ₹1,880 / Qtl</div>
+      <div class="mandi-item"><strong>Maize</strong> ₹1,760 / Qtl</div>
+    </div>
+  </div>
+
+  <!-- AGNI Query Card (Text & Voice) -->
   <div class="card">
     <label for="langSelect" style="font-size: 12px; font-weight: bold; color: #444;">Language / भाषा:</label>
     <select id="langSelect">
@@ -75,8 +99,16 @@
     </select>
 
     <div style="margin-top: 10px;">
-      <textarea id="textQuery" rows="2" placeholder="Ask AGNI about crops, pests, or fertilizers..."></textarea>
-      <button class="submit-btn" id="askBtn" onclick="submitTextQuery()">Ask AGNI 🌾</button>
+      <textarea id="textQuery" rows="2" placeholder="Ask AGNI or tap mic to speak..."></textarea>
+      
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button class="mic-btn" id="micBtn" type="button" onclick="toggleVoiceInput()" style="flex: 1;">
+          🎤 Speak
+        </button>
+        <button class="submit-btn" id="askBtn" type="button" onclick="submitTextQuery()" style="flex: 2;">
+          Ask AGNI 🌾
+        </button>
+      </div>
     </div>
   </div>
 
@@ -136,11 +168,14 @@
     <label style="font-size: 11px; font-weight: bold; margin-top: 8px; display: block;">Contact Phone:</label>
     <input type="tel" id="postPhone" placeholder="e.g. 9876543210">
 
-    <button class="submit-btn" id="submitListingBtn" onclick="submitNewListing()">Publish Listing 🚀</button>
+    <button class="submit-btn" id="submitListingBtn" onclick="submitNewListing()" style="width: 100%; margin-top: 12px;">Publish Listing 🚀</button>
   </div>
 </div>
 
 <script>
+  let recognition;
+  let isListening = false;
+
   document.addEventListener("DOMContentLoaded", () => {
     fetchLiveWeather();
     loadMarketplace();
@@ -163,6 +198,57 @@
         document.getElementById('windVal').innerText = `Wind: ${Math.round(data.current_weather.windspeed)} km/h`;
       }
     } catch(e) {}
+  }
+
+  function toggleVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+      return;
+    }
+
+    const micBtn = document.getElementById('micBtn');
+    const queryInput = document.getElementById('textQuery');
+    const lang = document.getElementById('langSelect').value;
+
+    if (isListening) {
+      recognition.stop();
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    if (lang === 'Hindi') recognition.lang = 'hi-IN';
+    else if (lang === 'Bengali') recognition.lang = 'bn-IN';
+    else if (lang === 'Assamese') recognition.lang = 'as-IN';
+    else recognition.lang = 'en-IN';
+
+    recognition.onstart = () => {
+      isListening = true;
+      micBtn.innerText = "🔴 Listening...";
+      micBtn.style.background = "#d32f2f";
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      queryInput.value = transcript;
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech Recognition Error:", event.error);
+      alert("Could not recognize voice cleanly. Please try speaking again.");
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      micBtn.innerText = "🎤 Speak";
+      micBtn.style.background = "#0288d1";
+    };
+
+    recognition.start();
   }
 
   async function loadMarketplace() {
@@ -226,6 +312,52 @@
 
   async function submitTextQuery() {
     const query = document.getElementById('textQuery').value.trim();
+    const language = document.getElementById('langSelect').value;
+    const responseBox = document.getElementById('response');
+    const askBtn = document.getElementById('askBtn');
+
+    if (!query) return alert("Please type or speak a question!");
+
+    askBtn.disabled = true;
+    askBtn.innerText = "AGNI is thinking...";
+    responseBox.innerText = "Consulting AGNI Engine...";
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, language })
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        responseBox.innerText = "Error: " + data.error;
+      } else if (data.reply) {
+        responseBox.innerText = data.reply;
+        speakText(data.reply, language);
+      }
+    } catch (err) {
+      responseBox.innerText = "Network Error: " + err.message;
+    } finally {
+      askBtn.disabled = false;
+      askBtn.innerText = "Ask AGNI 🌾";
+    }
+  }
+
+  function speakText(text, lang) {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (lang === 'Hindi') utterance.lang = 'hi-IN';
+      else if (lang === 'Bengali') utterance.lang = 'bn-IN';
+      else if (lang === 'Assamese') utterance.lang = 'as-IN';
+      else utterance.lang = 'en-IN';
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+</script>
+
+</body>
+</html>.getElementById('textQuery').value.trim();
     const language = document.getElementById('langSelect').value;
     const responseBox = document.getElementById('response');
     const askBtn = document.getElementById('askBtn');
