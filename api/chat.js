@@ -17,7 +17,6 @@ let marketListings = [
 ];
 
 export default async function handler(req, res) {
-  // Always return JSON content type
   res.setHeader('Content-Type', 'application/json');
 
   try {
@@ -48,7 +47,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, listing: newListing });
     }
 
-    // 3. POST AGNI Chat Guidance Query (Using Groq API)
+    // 3. POST AGNI Chat Guidance Query (Multilingual Support)
     if (req.method === 'POST') {
       const { query, language } = req.body || {};
 
@@ -58,18 +57,30 @@ export default async function handler(req, res) {
 
       const apiKey = process.env.GROQ_API_KEY;
 
-      // Fallback response if GROQ_API_KEY environment variable is not set in Vercel
       if (!apiKey) {
         return res.status(200).json({
           success: true,
-          reply: `[Demo Guidance for "${query}"]:\n` +
-                 `• Basal dose: Apply DAP (50 kg/acre) and MOP (25 kg/acre) during land preparation.\n` +
-                 `• Top dressing: Apply Urea (45-50 kg/acre) in 2-3 split doses at tillering and panicle initiation stage.\n` +
-                 `• Note: Add GROQ_API_KEY in your Vercel project environment settings for live AI responses.`
+          reply: `[Demo Mode - ${language || 'English'}]: Please set GROQ_API_KEY in Vercel settings for live multilingual replies.`
         });
       }
 
-      // Standard Fetch Call to Groq API (OpenAI-compatible Chat Completions)
+      // Build precise dynamic instructions based on chosen language
+      const systemPrompt = `You are AGNI, an expert AI agricultural and government scheme advisor for farmers in Assam and North-East India.
+Your goal is to provide practical, accurate, and concise guidance (under 130 words).
+
+CRITICAL LANGUAGE & SCRIPT RULE:
+- You MUST respond ENTIRELY in the target language and script requested.
+- If requested language is "Assamese" or "অসমীয়া", respond strictly in ASSAMESE script (অসমীয়া লিপি).
+- If requested language is "Hindi" or "हिंदी", respond strictly in DEVANAGARI script (हिंदी देवनागरी).
+- If requested language is "Bengali" or "বাংলা", respond strictly in BENGALI script (বাংলা লিপি).
+- If requested language is "English", respond in English.
+- Even if the input is written in Roman script (like Hinglish/Assemglish "tamatar ka bhav"), respond strictly in the user's SELECTED output language script.
+
+LOCAL CONTEXT FOCUS:
+- Tailor advice to Assam agriculture (e.g., Sali/Boro paddy, Assam climate, Guwahati/Kamrup/Jorhat mandis, local fertilizers, and schemes like PM-KISAN, CMSGUY, or PMFBY).`;
+
+      const userPrompt = `Target Language Selected: ${language || 'English'}\nFarmer Query: ${query}`;
+
       const groqUrl = "https://api.groq.com/openai/v1/chat/completions";
 
       const apiResponse = await fetch(groqUrl, {
@@ -81,17 +92,11 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
           messages: [
-            {
-              role: "system",
-              content: "You are AGNI, an AI agricultural expert for Indian farmers in Assam and North-East India. Provide clear, actionable farming guidance under 120 words."
-            },
-            {
-              role: "user",
-              content: `Language requested: ${language || 'English'}\nFarmer Query: ${query}`
-            }
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
           ],
-          temperature: 0.5,
-          max_tokens: 300
+          temperature: 0.3,
+          max_tokens: 400
         })
       });
 
@@ -101,11 +106,11 @@ export default async function handler(req, res) {
         console.error("Groq API error:", data);
         return res.status(200).json({
           success: true,
-          reply: `Groq API Error (${data.error?.message || 'API error'}). Check your GROQ_API_KEY in Vercel.`
+          reply: `Groq API Error (${data.error?.message || 'API Error'}).`
         });
       }
 
-      const replyText = data?.choices?.[0]?.message?.content || "No specific advice generated. Please try again.";
+      const replyText = data?.choices?.[0]?.message?.content || "No advice generated. Please try again.";
 
       return res.status(200).json({ success: true, reply: replyText });
     }
