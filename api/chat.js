@@ -26,7 +26,10 @@ module.exports = async function handler(req, res) {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey);
       const { data, error } = await supabase.from('market_listings').select('*').order('created_at', { ascending: false });
-      if (error || !data) return res.status(200).json({ listings: fallbackListings });
+      
+      if (error || !data || data.length === 0) {
+        return res.status(200).json({ listings: fallbackListings });
+      }
       return res.status(200).json({ listings: data });
     } catch (err) {
       return res.status(200).json({ listings: fallbackListings });
@@ -39,7 +42,7 @@ module.exports = async function handler(req, res) {
     const supabaseKey = process.env.SUPABASE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      return res.status(400).json({ error: "Supabase environment variables missing on Vercel" });
+      return res.status(400).json({ error: "Supabase credentials missing on Vercel" });
     }
 
     try {
@@ -62,7 +65,7 @@ module.exports = async function handler(req, res) {
     const { query, language } = req.body;
     const GROQ_KEY = process.env.GROQ_API_KEY;
 
-    if (!GROQ_KEY) return res.status(500).json({ error: 'GROQ_API_KEY is not set!' });
+    if (!GROQ_KEY) return res.status(500).json({ error: 'GROQ_API_KEY environment variable is not set!' });
 
     try {
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
