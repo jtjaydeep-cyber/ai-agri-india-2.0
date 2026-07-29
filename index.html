@@ -177,7 +177,7 @@
         `).join('');
       }
     } catch(e) {
-      console.log("Using default fallback listings");
+      console.log("Using fallback market listings");
     }
   }
 
@@ -221,6 +221,51 @@
 
   async function submitTextQuery() {
     const query = document.getElementById('textQuery').value.trim();
+    const language = document.getElementById('langSelect').value;
+    const responseBox = document.getElementById('response');
+    const askBtn = document.getElementById('askBtn');
+
+    if (!query) return alert("Please type a question!");
+
+    askBtn.disabled = true;
+    askBtn.innerText = "AGNI is thinking...";
+    responseBox.innerText = "Consulting AGNI Engine...";
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, language })
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        responseBox.innerText = "Error: " + data.error;
+      } else if (data.reply) {
+        responseBox.innerText = data.reply;
+        speakText(data.reply, language);
+      }
+    } catch (err) {
+      responseBox.innerText = "Network Error: " + err.message;
+    } finally {
+      askBtn.disabled = false;
+      askBtn.innerText = "Ask AGNI 🌾";
+    }
+  }
+
+  function speakText(text, lang) {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (lang === 'Hindi') utterance.lang = 'hi-IN';
+      else if (lang === 'Bengali') utterance.lang = 'bn-IN';
+      else utterance.lang = 'en-IN';
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+</script>
+
+</body>
+</html>yId('textQuery').value.trim();
     const language = document.getElementById('langSelect').value;
     const responseBox = document.getElementById('response');
     const askBtn = document.getElementById('askBtn');
